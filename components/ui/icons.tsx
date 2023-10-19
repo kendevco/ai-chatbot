@@ -121,6 +121,22 @@ function IconVercel({ className, ...props }: React.ComponentProps<'svg'>) {
   )
 }
 
+function IconGoogle({ className, ...props }: React.ComponentProps<'svg'>) {
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      fill="currentColor"
+      className={cn('h-4 w-4', className)}
+      {...props}
+    >
+      <title>Google</title>
+      <path d="M12 3c4.97 0 9 4.03 9 9s-4.03 9-9 9-9-4.03-9-9 4.03-9 9-9zm4.24 6.75h-1.96v-.75h-1.5v.75h-1.04v1.5h1.04v1.25c0 .41.12.75.36 1 .24.25.57.38.99.38.42 0 .75-.13.99-.38.24-.25.36-.59.36-1v-2.25h1.04v-1.5zm-8.48 0h1.96v-.75h1.5v.75h1.04v1.5h-1.04v1.25c0 .41-.12.75-.36 1-.24.25-.57.38-.99.38-.42 0-.75-.13-.99-.38-.24-.25-.36-.59-.36-1v-2.25h-1.04v-1.5z" />
+    </svg>
+  )
+}
+
 function IconGitHub({ className, ...props }: React.ComponentProps<'svg'>) {
   return (
     <svg
@@ -481,6 +497,7 @@ export {
   IconNextChat,
   IconOpenAI,
   IconVercel,
+  IconGoogle,
   IconGitHub,
   IconSeparator,
   IconArrowDown,

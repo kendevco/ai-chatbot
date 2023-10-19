@@ -17,7 +17,7 @@ import { SidebarFooter } from '@/components/sidebar-footer'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { ClearHistory } from '@/components/clear-history'
 import { UserMenu } from '@/components/user-menu'
-import { LoginButton } from '@/components/login-button'
+import { LoginButton } from '@/components/login-button-github'
 
 export async function Header() {
   const session = await auth()
@@ -63,12 +63,12 @@ export async function Header() {
           <span className="hidden ml-2 md:flex">GitHub</span>
         </a>
         <a
-          href="https://github.com/vercel/nextjs-ai-chatbot/"
+          href="https://vercel.com/ken-dev-co/ai-chatbot/"
           target="_blank"
           className={cn(buttonVariants())}
         >
           <IconVercel className="mr-2" />
-          <span className="hidden sm:block">Deploy to Vercel</span>
+          <span className="hidden sm:block">Manage on Vercel</span>
           <span className="sm:hidden">Deploy</span>
         </a>
       </div>

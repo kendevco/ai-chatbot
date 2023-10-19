@@ -12,7 +12,7 @@ interface LoginButtonProps extends ButtonProps {
   text?: string
 }
 
-export function LoginButton({
+export function LoginButtonGithub({
   text = 'Login with GitHub',
   showGithubIcon = true,
   className,
