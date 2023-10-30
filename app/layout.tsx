@@ -8,6 +8,9 @@ import { cn } from '@/lib/utils'
 import { TailwindIndicator } from '@/components/tailwind-indicator'
 import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
+import { env } from 'process'
+
+const metadataBase = new URL(env.NEXT_PUBLIC_BASE_URL || 'htp://localhtost:3000');
 
 export const metadata: Metadata = {
   title: {
@@ -23,7 +26,8 @@ export const metadata: Metadata = {
     icon: '/favicon.ico',
     shortcut: '/favicon-16x16.png',
     apple: '/apple-touch-icon.png'
-  }
+  },
+  metadataBase,
 }
 
 interface RootLayoutProps {

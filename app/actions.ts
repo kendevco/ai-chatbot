@@ -7,6 +7,16 @@ import { kv } from '@vercel/kv'
 import { auth } from '@/auth'
 import { type Chat } from '@/lib/types'
 
+export async function getUserId(session: any): Promise<string> {
+  // Return the sub property of the session user, if present.
+  if (session?.user?.sub) {
+    return await "u_" + session.user.sub;
+  }
+
+  // Otherwise, return an empty string.
+  return "";
+}
+
 export async function getChats(userId?: string | null) {
   if (!userId) {
     return []
@@ -33,7 +43,9 @@ export async function getChats(userId?: string | null) {
 export async function getChat(id: string, userId: string) {
   const chat = await kv.hgetall<Chat>(`chat:${id}`)
 
-  if (!chat || (userId && chat.userId !== userId)) {
+
+
+  if (!chat || (userId && String(chat.userId) !== userId)) {
     return null
   }
 
@@ -42,6 +54,7 @@ export async function getChat(id: string, userId: string) {
 
 export async function removeChat({ id, path }: { id: string; path: string }) {
   const session = await auth()
+  const userId = await getUserId(session)
 
   if (!session) {
     return {
@@ -51,14 +64,14 @@ export async function removeChat({ id, path }: { id: string; path: string }) {
 
   const uid = await kv.hget<string>(`chat:${id}`, 'userId')
 
-  if (uid !== session?.user?.id) {
+  if (uid !== userId) {
     return {
       error: 'Unauthorized'
     }
   }
 
   await kv.del(`chat:${id}`)
-  await kv.zrem(`user:chat:${session.user.id}`, `chat:${id}`)
+  await kv.zrem(`user:chat:${userId}`, `chat:${id}`)
 
   revalidatePath('/')
   return revalidatePath(path)
@@ -66,22 +79,23 @@ export async function removeChat({ id, path }: { id: string; path: string }) {
 
 export async function clearChats() {
   const session = await auth()
+  const userId = (await getUserId(session)) || ''
 
-  if (!session?.user?.id) {
+  if (!userId) {
     return {
       error: 'Unauthorized'
     }
   }
 
-  const chats: string[] = await kv.zrange(`user:chat:${session.user.id}`, 0, -1)
+  const chats: string[] = await kv.zrange(`user:chat:${userId}`, 0, -1)
   if (!chats.length) {
-  return redirect('/')
+    return redirect('/')
   }
   const pipeline = kv.pipeline()
 
   for (const chat of chats) {
     pipeline.del(chat)
-    pipeline.zrem(`user:chat:${session.user.id}`, chat)
+    pipeline.zrem(`user:chat:${userId}`, chat)
   }
 
   await pipeline.exec()
@@ -102,8 +116,9 @@ export async function getSharedChat(id: string) {
 
 export async function shareChat(chat: Chat) {
   const session = await auth()
+  const userId = await getUserId(session)
 
-  if (!session?.user?.id || session.user.id !== chat.userId) {
+  if (!userId || userId !== chat.userId) {
     return {
       error: 'Unauthorized'
     }
