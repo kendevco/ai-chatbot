@@ -31,12 +31,14 @@ export async function POST(req: Request) {
     configuration.apiKey = previewToken
   }
 
+  const model = process.env.OPENAI_MODEL || 'gpt-4-1106-preview';
+
   const res = await openai.createChatCompletion({
-    model: 'gpt-4',
+    model,
     messages,
     temperature: 0.7,
     stream: true
-  })
+  });
 
   const stream = OpenAIStream(res, {
     async onCompletion(completion) {
