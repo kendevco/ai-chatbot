@@ -1,8 +1,8 @@
+// components/login-button-google.tsx
 'use client'
 
 import * as React from 'react'
 import { signIn } from 'next-auth/react'
-
 import { cn } from '@/lib/utils'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { IconGoogle, IconSpinner } from '@/components/ui/icons'
@@ -24,7 +24,7 @@ export function LoginButtonGoogle({
       variant="outline"
       onClick={() => {
         setIsLoading(true)
-        signIn('google', { callbackUrl: `/` })
+        signIn('google', { callbackUrl: '/' })
       }}
       disabled={isLoading}
       className={cn(className)}

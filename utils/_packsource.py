@@ -1,7 +1,7 @@
 import os
 import zipfile
 
-ROOT_FOLDER = r'C:\Data\Dev\Payload\foliomark3'
+ROOT_FOLDER = r'C:\Data\Dev\Fullstack\ai-chatbot'
 UTILS_FOLDER = os.path.join(ROOT_FOLDER, 'utils')
 ZIP_FILE_NAME = 'source.zip'
 

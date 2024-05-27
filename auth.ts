@@ -1,11 +1,12 @@
+// auth.ts
 import NextAuth, { type DefaultSession } from 'next-auth'
 import GitHub from 'next-auth/providers/github'
 import Google from 'next-auth/providers/google'
+import { handleError } from '@/lib/errorHandler'
 
 declare module 'next-auth' {
   interface Session {
     user: {
-      /** The user's id. */
       id: string
     } & DefaultSession['user']
   }
@@ -20,8 +21,8 @@ export const {
     GitHub,
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
-    })
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
   ],
   callbacks: {
     jwt({ token, profile }) {
