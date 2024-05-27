@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     const userId = await getUserId(session) || ''
 
     if (!userId) {
+      console.log("No user ID found")
       return new Response('Unauthorized', {
         status: 401
       })
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
       configuration.apiKey = previewToken
     }
 
-    const model = process.env.OPENAI_MODEL || 'gpt-4o'
+    const model = process.env.OPENAI_MODEL || 'gpt-4'
 
     const res = await openai.createChatCompletion({
       model,

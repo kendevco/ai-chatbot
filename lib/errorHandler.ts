@@ -1,5 +1,5 @@
 // lib/errorHandler.ts
-import toast from 'react-hot-toast'
+import { toast } from 'react-hot-toast'
 
 export const handleError = (error: any) => {
   console.error(error)

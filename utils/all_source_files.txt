@@ -27,14 +27,15 @@
 
 
 // auth.ts
+// auth.ts
 import NextAuth, { type DefaultSession } from 'next-auth'
 import GitHub from 'next-auth/providers/github'
 import Google from 'next-auth/providers/google'
+import { handleError } from '@/lib/errorHandler'
 
 declare module 'next-auth' {
   interface Session {
     user: {
-      /** The user's id. */
       id: string
     } & DefaultSession['user']
   }
@@ -49,8 +50,8 @@ export const {
     GitHub,
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
-    })
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
   ],
   callbacks: {
     jwt({ token, profile }) {
@@ -69,7 +70,6 @@ export const {
   },
   debug: true
 })
-
 
 // middleware.ts
 export { auth as middleware } from './auth'
@@ -626,10 +626,7 @@ export async function shareChat(chat: Chat) {
 
 
 // app\layout.tsx
-import { Metadata } from 'next'
-
 import { Toaster } from 'react-hot-toast'
-
 import '@/app/globals.css'
 import { fontMono, fontSans } from '@/lib/fonts'
 import { cn } from '@/lib/utils'
@@ -638,12 +635,12 @@ import { Providers } from '@/components/providers'
 import { Header } from '@/components/header'
 import { env } from 'process'
 
-const metadataBase = new URL(env.NEXT_PUBLIC_BASE_URL || 'htp://localhtost:3000');
+const metadataBase = new URL(env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000')
 
-export const metadata: Metadata = {
+export const metadata = {
   title: {
     default: 'Next.js AI Chatbot',
-    template: `%s - Next.js AI Chatbot`
+    template: '%s - Next.js AI Chatbot'
   },
   description: 'An AI-powered chatbot template built with Next.js and Vercel.',
   themeColor: [
@@ -666,19 +663,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
-      <body
-        className={cn(
-          'font-sans antialiased',
-          fontSans.variable,
-          fontMono.variable
-        )}
-      >
-        <Toaster />
+      <body className={cn('font-sans antialiased', fontSans.variable, fontMono.variable)}>
+        <Toaster position="bottom-right" />
         <Providers attribute="class" defaultTheme="system" enableSystem>
-          <div className="flex min-h-screen flex-col">
+          <div className="flex flex-col min-h-screen">
             {/* @ts-ignore */}
             <Header />
-            <main className="flex flex-1 flex-col bg-muted/50">{children}</main>
+            <main className="flex flex-col flex-1 bg-muted/50">
+              {children}
+            </main>
           </div>
           <TailwindIndicator />
         </Providers>
@@ -686,7 +679,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
     </html>
   )
 }
-
 
 // app\page.tsx
 import { nanoid } from '@/lib/utils'
@@ -707,13 +699,14 @@ export const runtime = 'edge'
 
 
 // app\api\chat\route.ts
+// app/api/chat/route.ts
 import { kv } from '@vercel/kv'
 import { OpenAIStream, StreamingTextResponse } from 'ai'
 import { Configuration, OpenAIApi } from 'openai-edge'
-
 import { auth } from '@/auth'
 import { nanoid } from '@/lib/utils'
 import { getUserId } from '../../actions'
+import { handleError } from '@/lib/errorHandler'
 
 export const runtime = 'edge'
 
@@ -724,62 +717,68 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration)
 
 export async function POST(req: Request) {
-  const json = await req.json()
-  const { messages, previewToken } = json
- 
-  const session = await auth();
-  const userId = await getUserId(session) || '';
+  try {
+    const json = await req.json()
+    const { messages, previewToken } = json
 
-  if (!userId) {
-    return new Response('Unauthorized', {
-      status: 401
-    })
-  }
+    const session = await auth()
+    const userId = await getUserId(session) || ''
 
-  if (previewToken) {
-    configuration.apiKey = previewToken
-  }
-
-  const model = process.env.OPENAI_MODEL || 'gpt-4o';
-
-  const res = await openai.createChatCompletion({
-    model,
-    messages,
-    temperature: 0.7,
-    stream: true
-  });
-
-  const stream = OpenAIStream(res, {
-    async onCompletion(completion) {
-      const title = json.messages[0].content.substring(0, 100)
-      const id = json.id ?? nanoid()
-      const createdAt = Date.now()
-      const path = `/chat/${id}`
-      const payload = {
-        id,
-        title,
-        userId,
-        createdAt,
-        path,
-        messages: [
-          ...messages,
-          {
-            content: completion,
-            role: 'assistant'
-          }
-        ]
-      }
-      await kv.hmset(`chat:${id}`, payload)
-      await kv.zadd(`user:chat:${userId}`, {
-        score: createdAt,
-        member: `chat:${id}`
+    if (!userId) {
+      return new Response('Unauthorized', {
+        status: 401
       })
     }
-  })
 
-  return new StreamingTextResponse(stream)
+    if (previewToken) {
+      configuration.apiKey = previewToken
+    }
+
+    const model = process.env.OPENAI_MODEL || 'gpt-4'
+
+    const res = await openai.createChatCompletion({
+      model,
+      messages,
+      temperature: 0.7,
+      stream: true
+    })
+
+    const stream = OpenAIStream(res, {
+      async onCompletion(completion) {
+        const title = json.messages[0].content.substring(0, 100)
+        const id = json.id ?? nanoid()
+        const createdAt = Date.now()
+        const path = `/chat/${id}`
+        const payload = {
+          id,
+          title,
+          userId,
+          createdAt,
+          path,
+          messages: [
+            ...messages,
+            {
+              content: completion,
+              role: 'assistant'
+            }
+          ]
+        }
+        await kv.hmset(`chat:${id}`, payload)
+        await kv.zadd(`user:chat:${userId}`, {
+          score: createdAt,
+          member: `chat:${id}`
+        })
+      }
+    })
+
+    return new StreamingTextResponse(stream)
+  } catch (error) {
+    handleError(error)
+    return new Response('Internal Server Error', {
+      status: 500
+    })
+  }
 }
-
 
 // app\chat\[id]\page.tsx
 import { type Metadata } from 'next'
@@ -1772,11 +1771,11 @@ export function LoginButtonGithub({
 
 
 // components\login-button-google.tsx
+// components/login-button-google.tsx
 'use client'
 
 import * as React from 'react'
 import { signIn } from 'next-auth/react'
-
 import { cn } from '@/lib/utils'
 import { Button, type ButtonProps } from '@/components/ui/button'
 import { IconGoogle, IconSpinner } from '@/components/ui/icons'
@@ -1798,7 +1797,7 @@ export function LoginButtonGoogle({
       variant="outline"
       onClick={() => {
         setIsLoading(true)
-        signIn('google', { callbackUrl: `/` })
+        signIn('google', { callbackUrl: '/' })
       }}
       disabled={isLoading}
       className={cn(className)}
@@ -4151,6 +4150,15 @@ export const initAnalytics = ({
   }
 }
 
+
+// lib\errorHandler.ts
+// lib/errorHandler.ts
+import toast from 'react-hot-toast'
+
+export const handleError = (error: any) => {
+  console.error(error)
+  toast.error(error.message || 'An unexpected error occurred')
+}
 
 // lib\fonts.ts
 import { JetBrains_Mono as FontMono, Inter as FontSans } from 'next/font/google'
